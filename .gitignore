@@ -21,3 +21,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# --- Added for BannkMint AI ---
+__pycache__/
+.env
+Update .gitignore to ignore Python cache and .env file
