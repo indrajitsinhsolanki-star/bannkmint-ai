@@ -1,3 +1,37 @@
+from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+
+app = FastAPI()
+
+# Health endpoint that never depends on DB
+@app.get("/api/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
+# Optional Mongo connection on startup (non-blocking)
+mongo_client = None
+db = None
+
+@app.on_event("startup")
+async def startup_db():
+    global mongo_client, db
+    mongo_url = os.environ.get("MONGO_URL")
+    if not mongo_url:
+        print("MONGO_URL not set; starting without DB")
+        return
+    try:
+        mongo_client = AsyncIOMotorClient(
+            mongo_url,
+            serverSelectionTimeoutMS=3000,
+            connectTimeoutMS=3000,
+        )
+        db = mongo_client.get_default_database()
+        # Probe but don't crash the app if it fails
+        await db.command("ping")
+        print("MongoDB connected")
+    except Exception as e:
+        print(f"MongoDB connection failed: {e} (app will still start)")
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Depends, Query, Header, Request
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
